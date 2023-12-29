@@ -10,14 +10,13 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.AnalogEncoder;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.libs.AbsoluteEncoder;
 
-public class SwerveModule extends SubsystemBase {
+public class SwerveModule extends SubsystemBase implements Constants {
         
     //Zero : 0.697578
     //One : 0.701239
@@ -44,13 +43,11 @@ public class SwerveModule extends SubsystemBase {
 
 
     private SimpleMotorFeedforward driveFeedforward = new SimpleMotorFeedforward(0.084706, 2.4433 , 0.10133);
-    public double conversionFactor = 1.0/19.85; 
-    public double maxTurnSpeed; 
-    public double maxDriveSpeed = 5.05968;
-    public double maxAcceleration = 156 /24.4;
-    private TrapezoidProfile.Constraints constraints = new TrapezoidProfile.Constraints(maxDriveSpeed, maxAcceleration);
-    private State initialState = new TrapezoidProfile.State(0, 0);
-    private TrapezoidProfile trapezoidProfile = new TrapezoidProfile(constraints, initialState);
+    
+    // private TrapezoidProfile.Constraints constraints = new TrapezoidProfile.Constraints(maxDriveSpeed, maxAcceleration);
+    // private State initialState = new TrapezoidProfile.State(0, 0);
+    // private TrapezoidProfile trapezoidProfile;
+
         //Conversion Factor for the motor encoder output to wheel output
         //(Circumference / Gear Ratio) * Inches to meters conversion
 
@@ -78,36 +75,19 @@ public class SwerveModule extends SubsystemBase {
         driveEncoder = driveMotor.getEncoder();
 
         turnPID = new PIDController(P, 0, 0);
-        //we don't use I or D because they add extra 
+        //we don't use I or D 
         turnPID.enableContinuousInput(0,360);
         turnPID.setTolerance(turnSetpointTolerance, turnVelocityTolerance);
-
+        //determined from a SYSID scan
         drivePID = new PIDController(0.057715, 0, 0);
         drivePID.setTolerance(driveSetpointTolerance);
 
     }
   
 
-
-    //Runs while the bot is running
-    double lastP = 0.00;
-    double lastI = 0.00;
-    double lastD = 0.00;
+    //runs while the bot is running
     @Override
     public void periodic() {
-        // NetworkTableInstance.getDefault().getTable("currentAngle").getEntry(moduleID + "angle").setDouble(turnEncoder.getAbsolutePosition()*360- baseAngle);
-        // if(NetworkTableInstance.getDefault().getTable("turnPID").getEntry("P").getDouble(lastP) != lastP){
-        //     lastP = NetworkTableInstance.getDefault().getTable("turnPID").getEntry("P").getDouble(lastP);
-        //     turnPID.setP(NetworkTableInstance.getDefault().getTable("turnPID").getEntry("P").getDouble(lastP));
-        // }
-        // if(NetworkTableInstance.getDefault().getTable("turnPID").getEntry("I").getDouble(lastI) != lastI){
-        //     lastI = NetworkTableInstance.getDefault().getTable("turnPID").getEntry("P").getDouble(lastI);
-        //     turnPID.setI(NetworkTableInstance.getDefault().getTable("turnPID").getEntry("I").getDouble(lastI));
-        // }
-        // if(NetworkTableInstance.getDefault().getTable("turnPID").getEntry("D").getDouble(lastD) != lastD){
-        //     lastD = NetworkTableInstance.getDefault().getTable("turnPID").getEntry("P").getDouble(lastP);
-        //     turnPID.setD(NetworkTableInstance.getDefault().getTable("turnPID").getEntry("D").getDouble(lastD));
-        // }
         
     }
 
@@ -115,22 +95,18 @@ public class SwerveModule extends SubsystemBase {
         state = SwerveModuleState.optimize(state, Rotation2d.fromDegrees(turnEncoder.getAbsolutePosition()));
         setAngle(state.angle.getDegrees());
         setDriveSpeed(state.speedMetersPerSecond);
+        NetworkTableInstance.getDefault().getTable("Speed").getEntry(moduleID).setDouble(state.speedMetersPerSecond);
     }
     
     public void setAngle(double angle) {
         turnPID.setSetpoint(angle);
         turnMotor.set(-turnPID.calculate(turnEncoder.getAbsolutePosition()));
-        NetworkTableInstance.getDefault().getTable("turnPID").getEntry(moduleID + "Speed").setDouble(turnPID.calculate(turnEncoder.getAbsolutePosition()));
     }
 
     public void setDriveSpeed(double velocity){
         drivePID.setSetpoint(velocity);
-        trapezoidProfile = new TrapezoidProfile(constraints, new TrapezoidProfile.State(driveEncoder.getVelocity(), 0), initialState);
-        NetworkTableInstance.getDefault().getTable("DriveSpeed").getEntry(moduleID).setDouble(driveFeedforward.calculate(trapezoidProfile.calculate(.02).position, trapezoidProfile.calculate(.02).velocity) +
-        drivePID.calculate(driveEncoder.getVelocity()));
-        // driveMotor.set(driveFeedforward.calculate(trapezoidProfile.calculate(.02).position, trapezoidProfile.calculate(.02).velocity) +
-        // drivePID.calculate(driveEncoder.getVelocity()));
-        initialState = trapezoidProfile.calculate(.02);
+        driveMotor.setVoltage(driveFeedforward.calculate(velocity)); 
+        // +drivePID.calculate(driveEncoder.getVelocity())); drivePID added too much instability
     }
     
     public void setTurnSpeed(double speed){
