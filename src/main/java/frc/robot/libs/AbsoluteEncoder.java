@@ -8,8 +8,7 @@ public class AbsoluteEncoder extends AnalogEncoder {
     }
     @Override
     public double getAbsolutePosition() {
-        // TODO Auto-generated method stub
-        return super.getAbsolutePosition()*360;
+        return (super.getAbsolutePosition()-super.getPositionOffset())*360;
     }
     
 }

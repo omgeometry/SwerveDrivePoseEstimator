@@ -1,0 +1,22 @@
+{
+  "NetworkTables": {
+    "transitory": {
+      "DriveSpeed": {
+        "open": true
+      },
+      "Speed": {
+        "open": true
+      },
+      "Velocity": {
+        "open": true
+      }
+    },
+    "types": {
+      "/FMSInfo": "FMSInfo"
+    }
+  },
+  "NetworkTables Settings": {
+    "mode": "Client (NT4)",
+    "serverTeam": "3140"
+  }
+}

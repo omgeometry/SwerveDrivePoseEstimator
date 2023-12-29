@@ -3,7 +3,7 @@ package frc.robot.libs;
 import edu.wpi.first.wpilibj.XboxController;
 
 public class XboxCotroller extends XboxController{
-    XboxCotroller(int port){
+    public XboxCotroller(int port){
         super(port);
     }
     @Override
@@ -32,7 +32,7 @@ public class XboxCotroller extends XboxController{
             return 0;
         }
     }
-    
+
     @Override
     public double getRightY(){
         if(Math.abs(super.getRightY()) > .05){
